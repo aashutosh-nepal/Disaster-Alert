@@ -1,9 +1,3 @@
-Here is a professional, polished, submission-ready README.md for your project 👇
-
-⸻
-
-:::writing{variant=“standard” id=“84562”}
-
 🚨 Local Disaster Alert & Resource Coordination Platform
 
 📌 Overview
@@ -12,7 +6,6 @@ The Local Disaster Alert & Resource Coordination Platform is a full-stack MERN w
 
 This platform provides a centralized system where citizens can report incidents and request essential resources, volunteers can respond to emergencies, and administrators can monitor and manage relief operations in real-time. The system aims to reduce response delays and improve disaster management efficiency.
 
-⸻
 
 🎯 Key Features
 
@@ -61,8 +54,6 @@ This platform provides a centralized system where citizens can report incidents 
 * Display disaster locations on map
 * Improve situational awareness
 
-⸻
-
 🏗️ Tech Stack
 
 Frontend
@@ -90,35 +81,6 @@ Real-Time
 
 * Socket.io
 
-⸻
-
-📁 Project Structure
-
-Local-Disaster-Alert-Platform/
-│
-├── client/                         # Frontend (React)
-│   ├── src/
-│   │   ├── components/            # UI components
-│   │   ├── pages/                 # Application pages
-│   │   ├── services/              # API integration
-│   │   ├── context/               # Global state management
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   │
-│   └── package.json
-│
-├── server/                         # Backend (Node.js)
-│   ├── models/                    # Database schemas
-│   ├── controllers/               # Business logic
-│   ├── routes/                    # API endpoints
-│   ├── middleware/                # Authentication middleware
-│   ├── config/                    # DB connection
-│   └── server.js
-│
-└── README.md
-
-⸻
-
 ⚙️ Installation & Setup
 
 🔹 Clone Repository
@@ -126,7 +88,6 @@ Local-Disaster-Alert-Platform/
 git clone https://github.com/your-username/disaster-platform.git
 cd disaster-platform
 
-⸻
 
 🔹 Backend Setup
 
@@ -139,7 +100,6 @@ Create .env file:
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key
 
-⸻
 
 🔹 Frontend Setup
 
@@ -151,7 +111,6 @@ Create .env file:
 
 VITE_GOOGLE_MAPS_API_KEY=your_api_key
 
-⸻
 
 🚀 Usage
 
@@ -161,7 +120,6 @@ VITE_GOOGLE_MAPS_API_KEY=your_api_key
 4. Admin monitors and manages all activities
 5. Real-time updates improve coordination
 
-⸻
 
 🔄 API Endpoints
 
@@ -180,7 +138,6 @@ Resource Requests
 * POST /api/requests
 * GET /api/requests
 
-⸻
 
 🎓 Learning Outcomes
 
@@ -190,7 +147,6 @@ Resource Requests
 * REST API design and integration
 * Database modeling using MongoDB
 
-⸻
 
 🔮 Future Enhancements
 
@@ -200,4 +156,6 @@ Resource Requests
 * SMS alert integration
 * Advanced analytics dashboard
 
+photos:
+<img width="503" height="515" alt="Screenshot 2026-04-23 at 1 37 07 AM" src="https://github.com/user-attachments/assets/53e92ef2-6fb9-4b70-beb9-e509656b8426" />
 
