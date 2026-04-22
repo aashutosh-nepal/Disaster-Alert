@@ -73,25 +73,72 @@ Real-Time
 
 ⸻
 
-📁 Project Structure
-
-project-root/
+Local-Disaster-Alert-Platform/
 │
-├── client/               # Frontend (React)
+├── client/                         # Frontend (React + Vite)
+│   ├── public/
 │   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   └── App.jsx
+│   │   ├── assets/                # Images, icons
+│   │   ├── components/            # Reusable UI components
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   └── ProtectedRoute.jsx
+│   │   │
+│   │   ├── pages/                 # Main pages
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   ├── Dashboard.jsx
+│   │   │   ├── Report.jsx
+│   │   │   └── Request.jsx
+│   │   │
+│   │   ├── services/              # API calls
+│   │   │   └── api.js
+│   │   │
+│   │   ├── context/               # Global state (Auth)
+│   │   │   └── AuthContext.jsx
+│   │   │
+│   │   ├── hooks/                 # Custom hooks
+│   │   │
+│   │   ├── App.jsx                # Main app component
+│   │   ├── main.jsx               # Entry point
+│   │   └── index.css              # Styling
+│   │
+│   ├── .env                       # Frontend environment variables
+│   ├── package.json
+│   └── vite.config.js
 │
-├── server/               # Backend (Node.js)
-│   ├── models/
-│   ├── routes/
-│   ├── controllers/
-│   ├── middleware/
-│   └── server.js
+├── server/                         # Backend (Node.js + Express)
+│   ├── config/
+│   │   └── db.js                  # MongoDB connection
+│   │
+│   ├── models/                    # Mongoose schemas
+│   │   ├── User.js
+│   │   ├── DisasterReport.js
+│   │   ├── ResourceRequest.js
+│   │   └── Task.js
+│   │
+│   ├── controllers/               # Business logic
+│   │   ├── authController.js
+│   │   ├── reportController.js
+│   │   └── requestController.js
+│   │
+│   ├── routes/                    # API routes
+│   │   ├── authRoutes.js
+│   │   ├── reportRoutes.js
+│   │   └── requestRoutes.js
+│   │
+│   ├── middleware/                # Middleware functions
+│   │   └── authMiddleware.js
+│   │
+│   ├── socket/                    # Socket.io setup (optional)
+│   │   └── socket.js
+│   │
+│   ├── server.js                  # Main server file
+│   ├── .env                       # Backend environment variables
+│   └── package.json
 │
-└── README.md
+├── README.md
+└── .gitignore
 
 ⸻
 
