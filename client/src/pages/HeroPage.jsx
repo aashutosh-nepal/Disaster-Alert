@@ -1,6 +1,7 @@
 import { createElement, useEffect, useMemo, useState } from 'react';
+import L from 'leaflet';
 import { Link } from 'react-router-dom';
-import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip } from 'react-leaflet';
+import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import heroIllustration from '../assets/hero.png';
 import {
   FiActivity,
@@ -89,18 +90,6 @@ const advancedFeatures = [
   ['Offline support (PWA)', FiActivity],
 ];
 
-const flowSteps = [
-  'User registers or logs in',
-  'Citizen reports disaster or requests help',
-  'Data is stored in MongoDB',
-  'System notifies volunteers in real time',
-  'Volunteer accepts the request',
-  'Volunteer updates progress',
-  'Admin monitors all activities',
-  'Status updates are sent to users',
-  'Request is marked completed',
-];
-
 const heroPillars = [
   ['Citizens', 'Report incidents with map location and evidence.'],
   ['Volunteers', 'See nearby alerts, accept work, and update field status.'],
@@ -113,6 +102,8 @@ const heroMetrics = [
   ['Coverage', 'Location-aware operations'],
 ];
 
+const heroMapCenter = [12.9716, 77.5946];
+
 function SectionIntro({ eyebrow, title, copy }) {
   return (
     <div className="max-w-3xl">
@@ -121,6 +112,45 @@ function SectionIntro({ eyebrow, title, copy }) {
       {copy && <p className="mt-4 text-base leading-7 text-[rgb(var(--muted))]">{copy}</p>}
     </div>
   );
+}
+
+function RefreshHeroMapLayout() {
+  const map = useMap();
+
+  useEffect(() => {
+    const refresh = () => map.invalidateSize();
+    refresh();
+
+    const timer = window.setTimeout(refresh, 180);
+    window.addEventListener('resize', refresh);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('resize', refresh);
+    };
+  }, [map]);
+
+  return null;
+}
+
+function SyncHeroMapViewport({ points }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (points.length === 0) {
+      map.setView(heroMapCenter, 11);
+      return;
+    }
+
+    if (points.length === 1) {
+      map.setView(points[0], 12);
+      return;
+    }
+
+    map.fitBounds(L.latLngBounds(points), { padding: [36, 36] });
+  }, [map, points]);
+
+  return null;
 }
 
 const districtFeed = [
@@ -181,29 +211,312 @@ const districtFeed = [
   },
 ];
 
-const severityTone = {
-  critical: 'bg-[#ef5b47]/18 text-[#ff9a89] border-[#ef5b47]/35',
-  response: 'bg-[#22c55e]/18 text-[#96f1b0] border-[#22c55e]/35',
-  support: 'bg-[#2cb7d8]/18 text-[#8cecff] border-[#2cb7d8]/35',
-};
-
 const responseHubs = [
   { id: 'hub-central', label: 'Central Command', coords: [12.9716, 77.5946], color: '#f5c451' },
   { id: 'hub-east', label: 'East Relief Hub', coords: [12.983, 77.638], color: '#2cb7d8' },
   { id: 'hub-south', label: 'South Medical Base', coords: [12.935, 77.603], color: '#22c55e' },
 ];
 
-const zoneLabels = [
-  { label: 'North sector', classes: 'left-[10%] top-[24%]' },
-  { label: 'River belt', classes: 'right-[10%] top-[36%]' },
-  { label: 'Central grid', classes: 'left-[36%] top-[52%]' },
-  { label: 'South access', classes: 'left-[18%] bottom-[18%]' },
+const replayEvents = [
+  {
+    id: 'report-opened',
+    time: '07:12',
+    title: 'Flood report opened',
+    actor: 'Citizen desk',
+    status: 'Awaiting verification',
+    eta: '17 min',
+    note: 'Resident uploads location-tagged photos from East ward after stormwater starts entering ground-floor homes.',
+    detail: 'Intake console validates coordinates, tags the ward, and opens a high-priority flood case.',
+    tone: 'critical',
+    accent: '#ef5b47',
+    metrics: [
+      ['Water level', '0.7m rising'],
+      ['Reports linked', '03 homes'],
+      ['Queue status', 'Priority 01'],
+    ],
+  },
+  {
+    id: 'evidence-verified',
+    time: '07:15',
+    title: 'Evidence verified',
+    actor: 'Control room',
+    status: 'Verified and broadcast',
+    eta: '14 min',
+    note: 'Admin confirms duplicate citizen reports, cross-checks rainfall feed, and marks the alert as verified.',
+    detail: 'The system pushes a verified flood alert to nearby volunteers and flags shelter operators in the north corridor.',
+    tone: 'response',
+    accent: '#22c55e',
+    metrics: [
+      ['Source confidence', '92%'],
+      ['Alerts sent', '18 volunteers'],
+      ['Shelters notified', '02 sites'],
+    ],
+  },
+  {
+    id: 'volunteer-assigned',
+    time: '07:19',
+    title: 'Volunteer assigned',
+    actor: 'Field network',
+    status: 'Rescue team en route',
+    eta: '09 min',
+    note: 'Nearest flood-trained volunteer accepts the task with boat support and shares a live movement status.',
+    detail: 'Assignment is locked to one responder, while backup volunteers stay on standby for supply routing.',
+    tone: 'support',
+    accent: '#2cb7d8',
+    metrics: [
+      ['Responder', 'Unit V-12'],
+      ['Travel mode', 'Boat + van'],
+      ['Backup ready', '04 volunteers'],
+    ],
+  },
+  {
+    id: 'route-adjusted',
+    time: '07:24',
+    title: 'Route adjusted',
+    actor: 'Dispatch board',
+    status: 'Access route rerouted',
+    eta: '06 min',
+    note: 'Blocked underpass forces a reroute through Central grid while tanker support is redirected from East Relief Hub.',
+    detail: 'Command view updates the ETA, highlights the safer corridor, and shares the change with all active responders.',
+    tone: 'critical',
+    accent: '#f5c451',
+    metrics: [
+      ['Primary road', 'Closed'],
+      ['Updated ETA', '06 min'],
+      ['Supply shift', '2 tankers'],
+    ],
+  },
+  {
+    id: 'shelter-stabilized',
+    time: '07:31',
+    title: 'Shelter capacity secured',
+    actor: 'Relief base',
+    status: 'Families moved to shelter',
+    eta: '03 min',
+    note: 'North school shelter confirms intake capacity, dry kits, and medical triage support before evacuees arrive.',
+    detail: 'Admin dashboard links shelter capacity to the incident so citizens and volunteers see the same destination.',
+    tone: 'response',
+    accent: '#22c55e',
+    metrics: [
+      ['Beds ready', '26'],
+      ['Dry kits', '41 packed'],
+      ['Medics on site', '02'],
+    ],
+  },
+  {
+    id: 'incident-closed',
+    time: '07:38',
+    title: 'Case closed with follow-up',
+    actor: 'Operations lead',
+    status: 'Rescue completed',
+    eta: 'Resolved',
+    note: 'All tagged households are checked, response logs are closed, and a follow-up water supply request is scheduled.',
+    detail: 'The incident timeline becomes a full audit trail for response review, volunteer reporting, and post-event support.',
+    tone: 'support',
+    accent: '#2cb7d8',
+    metrics: [
+      ['People assisted', '14'],
+      ['Closure time', '26 min'],
+      ['Follow-up', 'Water delivery'],
+    ],
+  },
 ];
 
 function incidentHub(item) {
   if (item.severity === 'critical') return responseHubs[0];
   if (item.type === 'Water') return responseHubs[1];
   return responseHubs[2];
+}
+
+function IncidentReplay() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [replayCycle, setReplayCycle] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveIndex((value) => (value + 1) % replayEvents.length);
+      setReplayCycle((value) => value + 1);
+    }, 3200);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const activeEvent = replayEvents[activeIndex];
+
+  return (
+    <div className="mt-8 grid gap-5 xl:grid-cols-[0.86fr_1.14fr]">
+      <div className="rounded-[1.5rem] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-white/10 bg-[#0d1513] px-4 py-4">
+          <div>
+            <div className="ops-mono text-[11px] font-bold uppercase tracking-[0.22em] text-[#f5c451]">Incident replay</div>
+            <div className="mt-2 text-xl font-black text-white md:text-2xl">East ward flood corridor</div>
+            <div className="mt-2 max-w-xl text-sm leading-6 text-white/64">
+              One verified flood incident moving from first report to evacuation closure in a single operational timeline.
+            </div>
+          </div>
+          <div className="grid min-w-[220px] grid-cols-2 gap-2 text-sm">
+            <div className="rounded-xl border border-[#ef5b47]/20 bg-[#ef5b47]/10 px-3 py-3">
+              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-[#ff9a89]">Severity</div>
+              <div className="mt-1 font-black text-white">Critical flood</div>
+            </div>
+            <div className="rounded-xl border border-[#23b8d8]/20 bg-[#23b8d8]/10 px-3 py-3">
+              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-[#8cecff]">Response window</div>
+              <div className="mt-1 font-black text-white">26 minutes</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/6 px-4 py-3">
+          <div>
+            <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-white/54">Replay mode</div>
+            <div className="mt-1 text-sm font-bold text-white">Auto-play loop with manual override</div>
+          </div>
+          <div className="flex items-center gap-2">
+            {replayEvents.map((event, index) => (
+              <button
+                key={event.id}
+                type="button"
+                onClick={() => {
+                  setActiveIndex(index);
+                  setReplayCycle((value) => value + 1);
+                }}
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  index === activeIndex ? 'w-10 bg-[#f5c451]' : 'w-2.5 bg-white/24 hover:bg-white/44'
+                }`}
+                aria-label={`Open replay event ${index + 1}: ${event.title}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-5 grid gap-3">
+          {replayEvents.map((event, index) => {
+            const isActive = index === activeIndex;
+
+            return (
+              <button
+                key={event.id}
+                type="button"
+                onClick={() => {
+                  setActiveIndex(index);
+                  setReplayCycle((value) => value + 1);
+                }}
+                className={`group grid w-full gap-4 rounded-2xl border px-4 py-4 text-left transition duration-300 md:grid-cols-[72px_16px_1fr_auto] ${
+                  isActive
+                    ? 'border-white/18 bg-white text-[#0d1513] shadow-[0_20px_55px_rgba(255,255,255,0.08)]'
+                    : 'border-white/10 bg-white/4 text-white hover:border-white/20 hover:bg-white/7'
+                }`}
+              >
+                <div>
+                  <div className={`ops-mono text-[11px] font-bold uppercase tracking-[0.18em] ${isActive ? 'text-[#63716b]' : 'text-white/48'}`}>
+                    T+{index + 1}
+                  </div>
+                  <div className={`mt-1 text-lg font-black ${isActive ? 'text-[#111817]' : 'text-white'}`}>{event.time}</div>
+                </div>
+
+                <div className="relative hidden md:block">
+                  <div className={`absolute left-1/2 top-0 h-full w-px -translate-x-1/2 ${isActive ? 'bg-[#f5c451]/55' : 'bg-white/10'}`} />
+                  <span
+                    className="absolute left-1/2 top-4 h-4 w-4 -translate-x-1/2 rounded-full border-2"
+                    style={{
+                      borderColor: isActive ? event.accent : 'rgba(255,255,255,0.28)',
+                      backgroundColor: isActive ? event.accent : '#111817',
+                      boxShadow: isActive ? `0 0 0 6px ${event.accent}22` : 'none',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`ops-mono text-[10px] font-bold uppercase tracking-[0.18em] ${isActive ? 'text-[#5f6d68]' : 'text-white/48'}`}>
+                      {event.actor}
+                    </span>
+                    <span
+                      className="inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em]"
+                      style={{
+                        borderColor: `${event.accent}${isActive ? '' : '55'}`,
+                        color: isActive ? event.accent : '#ffffff',
+                        backgroundColor: isActive ? `${event.accent}14` : 'rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      {event.status}
+                    </span>
+                  </div>
+                  <div className={`mt-2 text-base font-black ${isActive ? 'text-[#111817]' : 'text-white'}`}>{event.title}</div>
+                  <div className={`mt-2 text-sm leading-6 ${isActive ? 'text-[#53615c]' : 'text-white/64'}`}>{event.note}</div>
+                </div>
+
+                <div className="flex items-start justify-between gap-3 md:block">
+                  <div className={`ops-mono text-[10px] uppercase tracking-[0.16em] ${isActive ? 'text-[#6d7a75]' : 'text-white/46'}`}>ETA</div>
+                  <div className={`mt-1 text-sm font-black ${isActive ? 'text-[#111817]' : 'text-white'}`}>{event.eta}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="relative overflow-hidden rounded-[1.6rem] border border-white/12 bg-[linear-gradient(180deg,#13211d_0%,#0b1211_100%)] p-5 shadow-[0_28px_100px_rgba(0,0,0,0.34)]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(239,91,71,0.18),transparent_18rem),radial-gradient(circle_at_88%_14%,rgba(44,183,216,0.14),transparent_16rem),linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[length:auto,auto,36px_36px,36px_36px]" />
+        <div className="relative">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="ops-mono text-[11px] font-bold uppercase tracking-[0.22em] text-[#8cecff]">Active frame</div>
+              <div className="mt-2 text-2xl font-black text-white md:text-3xl">{activeEvent.title}</div>
+              <div className="mt-2 max-w-2xl text-sm leading-6 text-white/66">{activeEvent.detail}</div>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/6 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/74">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: activeEvent.accent }} />
+              Step {String(activeIndex + 1).padStart(2, '0')}
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/6 p-4">
+              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-white/50">Lead actor</div>
+              <div className="mt-2 text-lg font-black text-white">{activeEvent.actor}</div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/6 p-4">
+              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-white/50">Status</div>
+              <div className="mt-2 text-lg font-black" style={{ color: activeEvent.accent }}>
+                {activeEvent.status}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/6 p-4">
+              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-white/50">Dispatch ETA</div>
+              <div className="mt-2 text-lg font-black text-white">{activeEvent.eta}</div>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-[1.35rem] border border-white/10 bg-[#091412]/92 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-[#f5c451]">Operational impact</div>
+                <div className="mt-1 text-sm font-bold text-white">Live case state at this moment in the replay</div>
+              </div>
+              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-white/44">Cycle {String(replayCycle + 1).padStart(2, '0')}</div>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {activeEvent.metrics.map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="ops-mono text-[10px] uppercase tracking-[0.16em] text-white/46">{label}</div>
+                  <div className="mt-2 text-lg font-black text-white">{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-xl border px-4 py-4" style={{ borderColor: `${activeEvent.accent}38`, backgroundColor: `${activeEvent.accent}12` }}>
+              <div className="ops-mono text-[10px] uppercase tracking-[0.18em]" style={{ color: activeEvent.accent }}>
+                Situation note
+              </div>
+              <div className="mt-2 text-sm leading-6 text-white/78">{activeEvent.note}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function LiveDistrictBoard() {
@@ -227,12 +540,7 @@ function LiveDistrictBoard() {
     return rotated.slice().sort((a, b) => Number(b.pulse) - Number(a.pulse));
   }, [tick]);
 
-  const boardFeed = useMemo(() => {
-    const start = tick % districtFeed.length;
-    return Array.from({ length: 4 }, (_, index) => districtFeed[(start + index) % districtFeed.length]);
-  }, [tick]);
-
-  const activeIncident = boardFeed[0];
+  const activeIncident = visibleFeed[0] ?? districtFeed[0];
   const routeLines = useMemo(
     () =>
       visibleFeed.map((item) => {
@@ -246,23 +554,17 @@ function LiveDistrictBoard() {
       }),
     [activeIncident.id, visibleFeed]
   );
+  const mapPoints = useMemo(
+    () => [...visibleFeed.map((item) => item.coords), ...responseHubs.map((hub) => hub.coords)],
+    [visibleFeed]
+  );
 
   return (
-    <div className="relative min-h-[560px] overflow-hidden rounded-[1.5rem] border border-[#d4dbd3] bg-[#eef3ee] text-[#0d1513] shadow-[0_32px_110px_rgba(17,24,23,0.16)]">
-      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_16%_14%,rgba(239,91,71,0.10),transparent_14rem),radial-gradient(circle_at_82%_24%,rgba(245,196,81,0.10),transparent_12rem),radial-gradient(circle_at_52%_86%,rgba(44,183,216,0.10),transparent_16rem)] pointer-events-none" />
-      <div className="absolute inset-0 z-10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.32))] pointer-events-none" />
-      <div className="absolute inset-0 z-10 bg-[linear-gradient(rgba(17,24,23,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(17,24,23,0.045)_1px,transparent_1px)] bg-[length:38px_38px] pointer-events-none" />
-      <div className="hero-radar-sweep pointer-events-none absolute left-1/2 top-1/2 z-10 h-[31rem] w-[31rem] -translate-x-1/2 -translate-y-1/2 rounded-full" />
-      <div className="hero-scanlines pointer-events-none absolute inset-0 z-10" />
-      <div className="pointer-events-none absolute inset-3 z-10 rounded-[1.2rem] border border-[#ffffff]/55" />
-      <div className="pointer-events-none absolute left-4 top-4 z-10 h-8 w-8 border-l border-t border-[#f5c451]/42" />
-      <div className="pointer-events-none absolute right-4 top-4 z-10 h-8 w-8 border-r border-t border-[#f5c451]/42" />
-      <div className="pointer-events-none absolute bottom-4 left-4 z-10 h-8 w-8 border-b border-l border-[#f5c451]/42" />
-      <div className="pointer-events-none absolute bottom-4 right-4 z-10 h-8 w-8 border-b border-r border-[#f5c451]/42" />
-
+    <div className="live-district-board relative min-h-[560px] overflow-hidden rounded-[1.5rem] border border-[#d4dbd3] bg-[#dce7df] text-[#0d1513] shadow-[0_32px_110px_rgba(17,24,23,0.16)]">
       <div className="absolute inset-0">
         <MapContainer
-          center={[12.9716, 77.5946]}
+          className="live-district-board__map"
+          center={heroMapCenter}
           zoom={11}
           zoomControl={false}
           attributionControl={false}
@@ -274,9 +576,11 @@ function LiveDistrictBoard() {
           keyboard={false}
           style={{ height: '100%', width: '100%' }}
         >
+          <RefreshHeroMapLayout />
+          <SyncHeroMapViewport points={mapPoints} />
           <TileLayer
             attribution='&copy; OpenStreetMap contributors &copy; CARTO'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           />
 
           {routeLines.map((route) => (
@@ -285,9 +589,9 @@ function LiveDistrictBoard() {
               positions={route.positions}
               pathOptions={{
                 color: route.color,
-                weight: route.active ? 3 : 2,
-                opacity: route.active ? 0.74 : 0.34,
-                dashArray: route.active ? '10 8' : '6 10',
+                weight: route.active ? 4 : 2.5,
+                opacity: route.active ? 0.88 : 0.48,
+                dashArray: route.active ? '10 7' : '7 9',
               }}
             />
           ))}
@@ -319,12 +623,12 @@ function LiveDistrictBoard() {
             <CircleMarker
               key={item.id}
               center={item.coords}
-              radius={item.pulse ? 13 + item.intensity * 2 : 9 + item.intensity}
+              radius={item.pulse ? 14 + item.intensity * 2 : 10 + item.intensity}
               pathOptions={{
                 color: item.color,
                 fillColor: item.fill,
-                fillOpacity: item.pulse ? 0.86 : 0.68,
-                weight: item.pulse ? 4 : 2,
+                fillOpacity: item.pulse ? 0.9 : 0.76,
+                weight: item.pulse ? 4.5 : 2.5,
               }}
             >
               <Tooltip direction="top" offset={[0, -12]} opacity={1} permanent={item.pulse}>
@@ -340,124 +644,7 @@ function LiveDistrictBoard() {
         </MapContainer>
       </div>
 
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_42%,rgba(17,24,23,0.10)_100%)]" />
-      <div className="pointer-events-none absolute inset-0 z-10 hidden md:block">
-        {zoneLabels.map((zone) => (
-          <div
-            key={zone.label}
-            className={`absolute rounded-full border border-[#cfd7cf] bg-white/72 px-3 py-1.5 ops-mono text-[10px] uppercase tracking-[0.18em] text-[#607068] backdrop-blur ${zone.classes}`}
-          >
-            {zone.label}
-          </div>
-        ))}
-      </div>
-
-      <div className="absolute left-4 right-4 top-4 z-20 rounded-xl border border-[#d4dbd3] bg-white/84 px-4 py-4 shadow-[0_14px_40px_rgba(17,24,23,0.12)] backdrop-blur-md">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <p className="ops-mono text-[11px] font-bold uppercase tracking-[0.24em] text-[#63716b]">Operations map</p>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#ef5b47]/30 bg-[#ef5b47]/14 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#ff9a89]">
-                <span className="h-2 w-2 rounded-full bg-[#ef5b47]" />
-                Active
-              </span>
-            </div>
-            <p className="mt-2 text-xl font-black md:text-2xl text-[#0d1513]">District response board</p>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-[#5a6963]">
-              Clear incident markers, severity levels, and dispatch routes across the district.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 lg:min-w-[280px]">
-            <div className="rounded-lg border border-[#d4dbd3] bg-[#f7faf7]/88 px-3 py-2">
-              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-[#6a7772]">Incidents</div>
-              <div className="mt-1 text-2xl font-black text-[#0d1513]">{districtFeed.length}</div>
-            </div>
-            <div className="rounded-lg border border-[#d4dbd3] bg-[#f7faf7]/88 px-3 py-2">
-              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-[#6a7772]">Critical</div>
-              <div className="mt-1 text-2xl font-black text-[#0d1513]">{districtFeed.filter((item) => item.severity === 'critical').length}</div>
-            </div>
-            <div className="rounded-lg border border-[#d4dbd3] bg-[#f7faf7]/88 px-3 py-2">
-              <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-[#6a7772]">Avg dispatch</div>
-              <div className="mt-1 text-2xl font-black text-[#0d1513]">11m</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute bottom-4 left-4 right-4 z-20 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-xl border border-[#d4dbd3] bg-white/84 p-4 shadow-[0_14px_40px_rgba(17,24,23,0.12)] backdrop-blur-md">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <div className="ops-mono text-[11px] uppercase tracking-[0.22em] text-[#63716b]">Priority queue</div>
-              <div className="mt-1 text-sm font-bold text-[#26312d]">Incidents sorted by urgency</div>
-            </div>
-            <div className="hidden items-center gap-3 text-[11px] text-[#6a7772] sm:flex">
-              <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[#ef5b47]" />Critical</span>
-              <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[#22c55e]" />Response</span>
-              <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[#2cb7d8]" />Support</span>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-2">
-            {boardFeed.map(({ id, type, place, status, color, severity, eta }) => (
-              <div
-                key={id}
-                className="grid gap-3 rounded-lg border border-[#d9e0d9] bg-[#f7faf7]/92 px-3 py-3 md:grid-cols-[96px_1fr_auto]"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-                  <span className="ops-mono text-xs font-bold uppercase tracking-[0.16em]" style={{ color }}>
-                    {type}
-                  </span>
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-[#0d1513]">{place}</div>
-                  <div className="mt-1 text-xs text-[#5f6d68]">{status}</div>
-                </div>
-                <div className="flex items-center justify-between gap-3 md:block">
-                  <span className={`inline-flex rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${severityTone[severity]}`}>
-                    {severity}
-                  </span>
-                  <div className="mt-0 text-right ops-mono text-[10px] uppercase tracking-[0.16em] text-[#70807a] md:mt-2">
-                    eta {eta}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-[#d4dbd3] bg-white/84 p-4 shadow-[0_14px_40px_rgba(17,24,23,0.12)] backdrop-blur-md">
-          <div className="ops-mono text-[11px] uppercase tracking-[0.22em] text-[#63716b]">Current focus</div>
-          <div className="mt-3 rounded-xl border border-[#d9e0d9] bg-[#f7faf7]/92 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-lg font-black text-[#0d1513]">{activeIncident.place}</div>
-                <div className="mt-1 text-sm text-[#5f6d68]">{activeIncident.type} incident</div>
-              </div>
-              <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${severityTone[activeIncident.severity]}`}>
-                {activeIncident.severity}
-              </span>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded-lg border border-[#d9e0d9] bg-white p-3">
-                <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-[#6d7a75]">Status</div>
-                <div className="mt-1 font-bold text-[#0d1513]">{activeIncident.status}</div>
-              </div>
-              <div className="rounded-lg border border-[#d9e0d9] bg-white p-3">
-                <div className="ops-mono text-[10px] uppercase tracking-[0.18em] text-[#6d7a75]">Dispatch ETA</div>
-                <div className="mt-1 font-bold text-[#0d1513]">{activeIncident.eta}</div>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-lg border border-[#23b8d8]/18 bg-[#23b8d8]/8 px-3 py-3 text-xs leading-6 text-[#b4f4ff]">
-              Built for fast visibility across incidents, dispatch, and response status.
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_48%,rgba(17,24,23,0.07)_100%)]" />
     </div>
   );
 }
@@ -579,7 +766,7 @@ export default function HeroPage() {
       <section id="problem" className="px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <SectionIntro
-            eyebrow="Problem statement"
+            eyebrow=""
             title="Disasters fail people when communication becomes fragmented."
             copy="Emergency response slows down when reporting, dispatch, and visibility are spread across disconnected channels."
           />
@@ -597,18 +784,11 @@ export default function HeroPage() {
       <section className="bg-[#111817] px-4 py-16 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <SectionIntro
-            eyebrow="Flood scenario"
-            title="From report to completion, every handoff is visible."
-            copy="A citizen reports an emergency, nearby volunteers see the request, one volunteer accepts and responds, the administrator prioritizes urgent cases, and status updates are shared in real time."
+            eyebrow="Incident replay"
+            title="Watch one flood response move through the command chain."
+            copy="This replay shows how a verified urban flood case travels from first citizen signal to dispatch, shelter routing, and final closure in one shared operational view."
           />
-          <div className="mt-8 grid gap-3 md:grid-cols-3">
-            {flowSteps.map((step, index) => (
-              <div key={step} className="rounded-lg border border-white/12 bg-white/8 p-4">
-                <div className="ops-mono text-xs font-bold text-[#f9c44a]">STEP {String(index + 1).padStart(2, '0')}</div>
-                <p className="mt-3 font-bold leading-6">{step}</p>
-              </div>
-            ))}
-          </div>
+          <IncidentReplay />
         </div>
       </section>
 

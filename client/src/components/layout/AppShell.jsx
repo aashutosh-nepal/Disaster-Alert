@@ -100,8 +100,6 @@ export default function AppShell() {
       socket.on('disaster:updated', onDisasterUpdated);
       socket.on('request:created', onRequestCreated);
       socket.on('request:updated', onRequestUpdated);
-      socket.on('request:statusChanged', onStatus);
-      socket.on('new_request', onRequestCreated);
       socket.on('request_accepted', onAccepted);
       socket.on('status_updated', onStatus);
 
@@ -110,8 +108,6 @@ export default function AppShell() {
         socket.off('disaster:updated', onDisasterUpdated);
         socket.off('request:created', onRequestCreated);
         socket.off('request:updated', onRequestUpdated);
-        socket.off('request:statusChanged', onStatus);
-        socket.off('new_request', onRequestCreated);
         socket.off('request_accepted', onAccepted);
         socket.off('status_updated', onStatus);
       };

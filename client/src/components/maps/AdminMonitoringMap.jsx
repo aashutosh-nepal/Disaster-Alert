@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import L from 'leaflet';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { Circle, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 
 const defaultCenter = [12.9716, 77.5946];
 const containerStyle = {
@@ -10,10 +10,49 @@ const containerStyle = {
 };
 
 function pointToLatLng(point) {
-  const lng = point?.coordinates?.[0];
-  const lat = point?.coordinates?.[1];
+  const lng = point?.coordinates?.[0] ?? point?.lng ?? point?.longitude;
+  const lat = point?.coordinates?.[1] ?? point?.lat ?? point?.latitude;
   if (lng == null || lat == null) return null;
   return [Number(lat), Number(lng)];
+}
+
+function RefreshMapLayout() {
+  const map = useMap();
+
+  useEffect(() => {
+    const refresh = () => map.invalidateSize();
+    refresh();
+
+    const timer = window.setTimeout(refresh, 150);
+    window.addEventListener('resize', refresh);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('resize', refresh);
+    };
+  }, [map]);
+
+  return null;
+}
+
+function UpdateMapViewport({ points }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (points.length === 0) {
+      map.setView(defaultCenter, 11);
+      return;
+    }
+
+    if (points.length === 1) {
+      map.setView(points[0], 13);
+      return;
+    }
+
+    map.fitBounds(L.latLngBounds(points), { padding: [32, 32] });
+  }, [map, points]);
+
+  return null;
 }
 
 function createMarkerIcon(color) {
@@ -37,14 +76,9 @@ function createMarkerIcon(color) {
 
 const reportIcon = createMarkerIcon('#dc2626');
 const requestIcon = createMarkerIcon('#2563eb');
+const volunteerIcon = createMarkerIcon('#16a34a');
 
-export default function AdminMonitoringMap({ reports = [], requests = [] }) {
-  const center = useMemo(() => {
-    const first = reports[0] || requests[0];
-    const point = first?.location ? pointToLatLng(first.location) : null;
-    return point || defaultCenter;
-  }, [reports, requests]);
-
+export default function AdminMonitoringMap({ reports = [], requests = [], center = null, radiusKm = null }) {
   const reportMarkers = useMemo(
     () =>
       reports
@@ -71,6 +105,17 @@ export default function AdminMonitoringMap({ reports = [], requests = [] }) {
     [requests]
   );
 
+  const centerPoint = useMemo(() => pointToLatLng(center), [center]);
+
+  const points = useMemo(
+    () => [
+      ...reportMarkers.map((marker) => marker.position),
+      ...requestMarkers.map((marker) => marker.position),
+      ...(centerPoint ? [centerPoint] : [])
+    ],
+    [centerPoint, reportMarkers, requestMarkers]
+  );
+
   return (
     <div className="space-y-2">
       <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -78,11 +123,32 @@ export default function AdminMonitoringMap({ reports = [], requests = [] }) {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-[rgb(var(--line))]">
-        <MapContainer center={center} zoom={11} scrollWheelZoom style={containerStyle}>
+        <MapContainer center={defaultCenter} zoom={11} scrollWheelZoom style={containerStyle}>
+          <RefreshMapLayout />
           <TileLayer
             attribution='&copy; OpenStreetMap contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+          <UpdateMapViewport points={points} />
+
+          {centerPoint && Number(radiusKm) > 0 && (
+            <Circle
+              center={centerPoint}
+              radius={Number(radiusKm) * 1000}
+              pathOptions={{ color: '#16a34a', fillColor: '#22c55e', fillOpacity: 0.12, weight: 2 }}
+            />
+          )}
+
+          {centerPoint && (
+            <Marker position={centerPoint} icon={volunteerIcon}>
+              <Popup>
+                <div className="text-sm font-semibold">Search center</div>
+                {Number(radiusKm) > 0 && (
+                  <div className="mt-1 text-xs text-slate-600">Volunteer radius: {Number(radiusKm)} km</div>
+                )}
+              </Popup>
+            </Marker>
+          )}
 
           {reportMarkers.map((marker) => (
             <Marker key={`report_${marker.id}`} position={marker.position} icon={reportIcon}>
